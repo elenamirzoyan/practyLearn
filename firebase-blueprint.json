@@ -1,0 +1,51 @@
+{
+  "entities": {
+    "Flashcard": {
+      "title": "Flashcard",
+      "description": "A vocabulary flashcard belonging to a user",
+      "type": "object",
+      "properties": {
+        "word": { "type": "string", "description": "The English word" },
+        "translation": { "type": "string", "description": "The Russian translation" },
+        "example": { "type": "string", "description": "Example sentence in English" },
+        "exampleContext": { "type": "string", "description": "Example sentence with Russian word in brackets" },
+        "createdAt": { "type": "number", "description": "Timestamp of creation" },
+        "learned": { "type": "boolean", "description": "Whether the word is learned" },
+        "status": { "type": "string", "enum": ["suggested", "learning", "learned", "archived"] },
+        "userId": { "type": "string", "description": "The UID of the owner" },
+        "correctCount": { "type": "number", "description": "Number of correct answers" },
+        "totalCount": { "type": "number", "description": "Total number of practice attempts" },
+        "grammarChallenges": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "sentence": { "type": "string" },
+              "answer": { "type": "string" },
+              "translation": { "type": "string" }
+            },
+            "required": ["sentence", "answer", "translation"]
+          }
+        },
+        "complexForms": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "label": { "type": "string" },
+              "value": { "type": "string" }
+            },
+            "required": ["label", "value"]
+          }
+        }
+      },
+      "required": ["word", "translation", "example", "exampleContext", "createdAt", "learned", "status", "userId"]
+    }
+  },
+  "firestore": {
+    "/flashcards/{cardId}": {
+      "schema": "Flashcard",
+      "description": "User flashcards"
+    }
+  }
+}

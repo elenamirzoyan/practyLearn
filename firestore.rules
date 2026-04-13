@@ -1,0 +1,76 @@
+// ===============================================================
+// Assumed Data Model
+// ===============================================================
+//
+// Collection: flashcards
+// Document ID: auto-generated
+// Fields:
+//   - word: string (required) - The English word
+//   - translation: string (required) - The Russian translation
+//   - example: string (required) - Example sentence
+//   - exampleContext: string (required) - Context sentence
+//   - createdAt: number (required) - Creation timestamp
+//   - learned: boolean (required) - Learning status
+//   - status: string (required, enum: ['suggested', 'learning', 'learned'])
+//   - userId: string (required) - Owner's UID
+//
+// ===============================================================
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function isDocOwner() {
+      return isAuthenticated() && request.auth.uid == resource.data.userId;
+    }
+
+    function isValidFlashcard(data) {
+      let requiredFields = ['word', 'translation', 'example', 'exampleContext', 'createdAt', 'learned', 'status', 'userId', 'correctCount', 'totalCount'];
+      let allAllowedFields = ['word', 'translation', 'example', 'exampleContext', 'createdAt', 'learned', 'status', 'userId', 'complexForms', 'correctCount', 'totalCount', 'grammarChallenges'];
+      
+      return data.keys().hasAll(requiredFields) &&
+             data.keys().hasOnly(allAllowedFields) &&
+             data.word is string && data.word.size() > 0 && data.word.size() < 100 &&
+             data.translation is string && data.translation.size() > 0 && data.translation.size() < 100 &&
+             data.example is string && data.example.size() < 500 &&
+             data.exampleContext is string && data.exampleContext.size() < 500 &&
+             data.createdAt is number &&
+             data.learned is bool &&
+             data.status in ['suggested', 'learning', 'learned', 'archived'] &&
+             data.userId == request.auth.uid &&
+             data.correctCount is number &&
+             data.totalCount is number &&
+             (!('complexForms' in data) || data.complexForms is list) &&
+             (!('grammarChallenges' in data) || data.grammarChallenges is list);
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /flashcards/{cardId} {
+      allow read: if isDocOwner();
+      allow create: if isAuthenticated() && isValidFlashcard(request.resource.data);
+      allow update: if isDocOwner() && isValidFlashcard(request.resource.data) && 
+                      request.resource.data.userId == resource.data.userId &&
+                      request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if isDocOwner();
+    }
+
+    match /test/connection {
+      allow read: if true;
+    }
+  }
+}
